@@ -3,6 +3,8 @@ import { Inter, Outfit, Geist } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
+import MainLayout from "@/components/MainLayout";
+
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const inter = Inter({
@@ -28,7 +30,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={cn("h-full", "antialiased", "dark", inter.variable, outfit.variable, "font-sans", geist.variable)}>
       <body className="min-h-full flex flex-col bg-slate-950">
-        {children}
+        <MainLayout>
+          {children}
+        </MainLayout>
       </body>
     </html>
   );
