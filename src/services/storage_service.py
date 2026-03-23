@@ -7,7 +7,7 @@ from src.core.config import settings
 
 class StorageService:
     def __init__(self, data_dir: str = None):
-        self.data_dir = Path(data_dir or settings.DATA_DIR)
+        self.data_dir = Path(data_dir or settings.STORAGE_DIR)
         self.data_dir.mkdir(parents=True, exist_ok=True)
         # Separate subdirs for raw and enhanced
         (self.data_dir / "raw").mkdir(exist_ok=True)
@@ -25,7 +25,8 @@ class StorageService:
         cv2.imwrite(str(absolute_path), image)
         return str(relative_path)
 
-    def get_absolute_path(self, relative_path: str) -> Path:
+    def get_full_path(self, relative_path: str) -> Path:
         return self.data_dir / relative_path
+
 
 storage_service = StorageService()

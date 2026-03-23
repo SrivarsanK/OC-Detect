@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    container_name: oralguard-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - oralguard_data:/app/.oral_data
+    environment:
+      - PROJECT_NAME=OralGuard-Deployed
+      - STORAGE_DIR=/app/.oral_data
+      - CLOUD_API_URL=http://localhost:8000/api/v1/mock-cloud/cases
+    restart: always
+
+volumes:
+  oralguard_data:
+    driver: local

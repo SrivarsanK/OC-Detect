@@ -1,0 +1,18 @@
+{
+    "metadata": {
+        "report_id": "REP-2cfa6b4a",
+        "timestamp": "2026-03-23T06:03:06.575991",
+        "model_version": "v1.0.0-efficientnet-b4",
+        "system": "OralGuard Edge v1.0"
+    },
+    "case": {
+        "id": "2cfa6b4a-7987-4c28-9392-18109f4d0fcd",
+        "patient_id": null
+    },
+    "findings": {
+        "triage_class": "Benign",
+        "confidence": 0.32822329352430885,
+        "uncertainty": 0.02386291660168883,
+        "referral_recommended": true
+    }
+}

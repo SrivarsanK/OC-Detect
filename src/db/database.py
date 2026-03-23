@@ -7,7 +7,11 @@ from src.core.config import settings
 # For PRODUCTION on Edge, use SQLCipher:
 # SQLALCHEMY_DATABASE_URL = f"sqlite+pysqlcipher:///{settings.DATA_DIR}/oralguard.db"
 # For v1 Local Dev/Validation, use standard SQLite for portability:
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{settings.DATA_DIR}/oralguard.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{settings.STORAGE_DIR}/oralguard.db"
+
+# Ensure storage dir exists
+os.makedirs(settings.STORAGE_DIR, exist_ok=True)
+
 
 # Ensure at-rest encryption check (v1 implementation placeholder for SQLCipher PRAGMA)
 # In production, we execute: conn.execute(f"PRAGMA key = '{os.getenv('DB_KEY', 'default-dev-key')}'")
