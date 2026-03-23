@@ -94,7 +94,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-full overflow-hidden flex-col lg:flex-row">
+    <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
       
       {/* 📋 Clinical Case Stream */}
       <section className="flex-1 p-6 lg:p-12 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[radial-gradient(ellipse_at_top_left,rgba(6,182,212,0.05)_0%,transparent_50%)]">

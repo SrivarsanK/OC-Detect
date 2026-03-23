@@ -200,7 +200,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         </header>
 
         {/* Dynamic Page Scroll Area */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 relative flex flex-col min-h-0 overflow-hidden">
           {children}
         </div>
 
