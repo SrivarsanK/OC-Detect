@@ -8,6 +8,7 @@ import io
 from src.services.image_processor import ImageProcessor
 from src.services.inference_service import inference_service
 from src.services.storage_service import storage_service
+from src.services.reporting_service import reporting_service
 from src.db.database import get_db
 from src.models.cases import Case, CaseStatus
 
@@ -25,6 +26,7 @@ class IngestResponse(BaseModel):
     uncertainty: float
     referral: bool
     heatmap_path: str | None = None
+    report_pdf_path: str | None = None
     message: str
 
 
@@ -72,13 +74,35 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
     raw_rel_path = storage_service.save_image(img, category="raw")
     enhanced_rel_path = storage_service.save_image(enhanced, category="enhanced")
     
-    # 8. Database Persistence
+    # 8. Clinical Reports (Phase 4 integration)
+    case_data_for_report = {
+        "id": str(uuid.uuid4()), # Temporary ID to ensure consistency
+        "prediction_class": inference_result["prediction"],
+        "confidence": inference_result["confidence"],
+        "uncertainty": inference_result["uncertainty"],
+        "referral": inference_result["referral"]
+    }
+    
+    # Use real Case ID
+    real_case_id = str(uuid.uuid4())
+    case_data_for_report["id"] = real_case_id
+    
+    report_json_path = reporting_service.generate_json(case_data_for_report)
+    report_pdf_path = reporting_service.generate_pdf(
+        case_data_for_report, 
+        {"enhanced": storage_service.get_full_path(enhanced_rel_path), 
+         "heatmap": storage_service.get_full_path(heatmap_path) if heatmap_path else None}
+    )
+
+    # 9. Database Persistence
     new_case = Case(
-        id=str(uuid.uuid4()),
+        id=real_case_id,
         patient_id=None,
         raw_path=raw_rel_path,
         enhanced_path=enhanced_rel_path,
         heatmap_path=heatmap_path,
+        report_pdf_path=report_pdf_path,
+        report_json_path=report_json_path,
         blur_score=round(blur_score, 2),
         prediction_class=inference_result["prediction"],
         confidence=inference_result["confidence"],
@@ -99,7 +123,8 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         uncertainty=new_case.uncertainty,
         referral=inference_result["referral"],
         heatmap_path=heatmap_path,
-        message="OralGuard triage and XAI evidence generation complete."
+        report_pdf_path=report_pdf_path,
+        message="OralGuard triage, XAI evidence, and Clinical Report generation complete."
     )
 
 

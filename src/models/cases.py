@@ -31,6 +31,9 @@ class Case(Base):
     prediction_class = Column(String, nullable=True) # {Normal, Benign, ...}
     confidence = Column(Float, nullable=True)
     uncertainty = Column(Float, nullable=True)
+    report_pdf_path = Column(String, nullable=True)
+    report_json_path = Column(String, nullable=True)
+
 
     
     def __repr__(self):

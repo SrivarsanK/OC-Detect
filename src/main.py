@@ -1,14 +1,14 @@
 from fastapi import FastAPI
-from src.api import ingestion
+from src.api import ingestion, cases
 from src.db.database import engine, Base
 
-# Create tables in startup
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="OralGuard API")
-
+app = FastAPI(title="OralGuard — Indian Oral Cancer Triage API")
 
 app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["Ingestion"])
+app.include_router(cases.router, prefix="/api/v1/cases", tags=["Cases"])
+
 
 @app.get("/")
 async def root():

@@ -9,5 +9,7 @@ pydantic-settings==2.2.1
 torch==2.3.0
 torchvision==0.18.0
 timm==1.0.3
+fpdf2
+
 
 
