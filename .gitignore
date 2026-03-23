@@ -1,0 +1,8 @@
+# Agent skills (usually installed via `npx skills add`)
+.agent/skills/
+/_agent/skills/
+/.agents/skills/
+/skills/
+
+# Agent lock file
+skills-lock.json
