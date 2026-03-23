@@ -20,6 +20,8 @@ class Case(Base):
     # Image Paths (Local encrypted storage)
     raw_path = Column(String, nullable=False)
     enhanced_path = Column(String, nullable=True)
+    heatmap_path = Column(String, nullable=True)
+
     
     # Metadata
     blur_score = Column(Float, nullable=True)
@@ -28,6 +30,8 @@ class Case(Base):
     # v1 specific triage results
     prediction_class = Column(String, nullable=True) # {Normal, Benign, ...}
     confidence = Column(Float, nullable=True)
+    uncertainty = Column(Float, nullable=True)
+
     
     def __repr__(self):
         return f"<Case(id={self.id}, status={self.status})>"

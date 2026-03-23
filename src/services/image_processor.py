@@ -38,3 +38,18 @@ class ImageProcessor:
 
     def is_blurry(self, variance: float) -> bool:
         return variance < self.laplacian_threshold
+
+    def overlay_heatmap(self, image: np.ndarray, heatmap: np.ndarray, alpha: float = 0.6) -> np.ndarray:
+        """
+        Overlay a Grad-CAM heatmap on the original image.
+        """
+        # Resize heatmap to match image size
+        heatmap_resized = cv2.resize(heatmap, (image.shape[1], image.shape[0]))
+        
+        # Convert heatmap to BGR using JET colormap
+        heatmap_bgr = cv2.applyColorMap(np.uint8(255 * heatmap_resized), cv2.COLORMAP_JET)
+        
+        # Combine
+        overlay = cv2.addWeighted(image, alpha, heatmap_bgr, 1 - alpha, 0)
+        return overlay
+

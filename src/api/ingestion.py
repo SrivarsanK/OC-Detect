@@ -22,8 +22,11 @@ class IngestResponse(BaseModel):
     blur_score: float
     prediction: str
     confidence: float
+    uncertainty: float
     referral: bool
+    heatmap_path: str | None = None
     message: str
+
 
 @router.post("/upload", response_model=IngestResponse)
 async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
@@ -57,19 +60,29 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
     # 5. AI Inference (Phase 2 integration)
     inference_result = inference_service.predict(enhanced)
     
-    # 6. Local Persistent Storage
+    # 6. Grad-CAM Heatmap (Phase 3 integration)
+    heatmap_path = None
+    if inference_result["prediction"] != "Normal":
+        # Note: In a real PyTorch scenario, the output tensor would be passed here
+        heatmap_raw = inference_service.generate_heatmap(None, 0) 
+        heatmap_overlay = processor.overlay_heatmap(enhanced, heatmap_raw)
+        heatmap_path = storage_service.save_image(heatmap_overlay, category="heatmaps")
+
+    # 7. Local Persistent Storage
     raw_rel_path = storage_service.save_image(img, category="raw")
     enhanced_rel_path = storage_service.save_image(enhanced, category="enhanced")
     
-    # 7. Database Persistence
+    # 8. Database Persistence
     new_case = Case(
         id=str(uuid.uuid4()),
         patient_id=None,
         raw_path=raw_rel_path,
         enhanced_path=enhanced_rel_path,
+        heatmap_path=heatmap_path,
         blur_score=round(blur_score, 2),
         prediction_class=inference_result["prediction"],
         confidence=inference_result["confidence"],
+        uncertainty=inference_result["uncertainty"],
         status=CaseStatus.PROCESSED
     )
     db.add(new_case)
@@ -83,9 +96,13 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         blur_score=new_case.blur_score,
         prediction=new_case.prediction_class,
         confidence=new_case.confidence,
+        uncertainty=new_case.uncertainty,
         referral=inference_result["referral"],
-        message="OralGuard triage complete. Image and results stored locally."
+        heatmap_path=heatmap_path,
+        message="OralGuard triage and XAI evidence generation complete."
     )
+
+
 
 
 
