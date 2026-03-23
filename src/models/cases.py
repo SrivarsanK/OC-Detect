@@ -14,6 +14,8 @@ class Case(Base):
     __tablename__ = "cases"
 
     id = Column(String, primary_key=True, index=True, default=lambda: str(uuid.uuid4()))
+    remote_sync_id = Column(String, nullable=True)
+
     patient_id = Column(String, index=True, nullable=True) # Linked to ABHA Address v2
     timestamp = Column(DateTime, default=datetime.utcnow)
     
