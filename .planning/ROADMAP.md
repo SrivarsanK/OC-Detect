@@ -71,11 +71,14 @@ OralGuard is being built as a standard, modular AI screening solution. We start 
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Ingestion Foundation | 0/2 | Not started | - |
-| 2. Inference Engine | 0/2 | Not started | - |
-| 3. Explainability & Safety | 0/2 | Not started | - |
+| 1. Ingestion Foundation | 2/2 | Complete | 2026-03-23 |
+| 2. Inference Engine | 2/2 | Complete | 2026-03-23 |
+| 3. Explainability & Safety | 2/2 | Complete | 2026-03-23 |
 | 4. Structured Reporting | 0/2 | Not started | - |
 | 5. Cloud Synchronization | 0/2 | Not started | - |
+
+
+
 
 ---
 *Roadmap defined: 2026-03-23*
