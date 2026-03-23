@@ -33,6 +33,7 @@ import {
   X,
   Plus
 } from 'lucide-react';
+import Link from 'next/link';
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -202,7 +203,13 @@ export default function Home() {
                   <Globe className="size-6 text-slate-500 shrink-0" />
                   {!size.isTablet && <span>Node Settings</span>}
                </Button>
-            </nav>
+               <Link href="/scan" className="w-full">
+             <Button variant="ghost" className="w-full justify-start gap-4 px-4 py-6 rounded-2xl text-slate-400 hover:text-white hover:bg-slate-900 font-outfit font-bold transition-all active:scale-[0.98]">
+                <Plus className="size-6 text-slate-500 shrink-0" />
+                {!size.isTablet && <span>New Scan</span>}
+             </Button>
+           </Link>
+        </nav>
 
             <div className="px-4 py-8 space-y-4">
               <Separator className="my-4 bg-slate-900" />
