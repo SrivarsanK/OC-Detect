@@ -6,4 +6,8 @@ opencv-python-headless==4.9.0.80
 numpy==1.26.4
 sqlalchemy==2.0.30
 pydantic-settings==2.2.1
+torch==2.3.0
+torchvision==0.18.0
+timm==1.0.3
+
 
