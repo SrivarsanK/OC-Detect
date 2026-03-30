@@ -10,6 +10,7 @@ Loads the trained oral cancer detection model and provides:
 """
 
 import os
+import cv2
 import torch
 import torch.nn as nn
 from torchvision import models
@@ -113,10 +114,10 @@ class InferenceService:
         tensor = augmented["image"].unsqueeze(0).to(self.device)
         return tensor
 
-    def predict(self, image: np.ndarray) -> Dict[str, Any]:
+    def predict(self, image: np.ndarray, clinical_features: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Run inference with MC Dropout uncertainty quantification.
-        Returns probabilities, prediction, confidence, uncertainty, and referral decision.
+        Run inference with MC Dropout uncertainty quantification & Clinical Reconciliation.
+        Returns probabilities, prediction, confidence, uncertainty, and clinical referral decision.
         """
         start_time = time.perf_counter()
         self.last_output = None
@@ -127,37 +128,60 @@ class InferenceService:
         input_tensor = self.preprocess(image)
         all_probs = []
 
-        # MC Dropout: enable dropout during inference
-        self.model.train()
+        # 1. Main pass (with dropout active for MC sampling)
+        self.model.train() 
+        with torch.enable_grad(): # Ensure we can do backward later for Grad-CAM
+            outputs = self.model(input_tensor)
+            self.last_output = outputs
+            probs = torch.softmax(outputs, dim=1)
+            all_probs.append(probs.detach().cpu().numpy()[0])
+
+        # 2. MC Dropout sampling passes
         with torch.no_grad():
-            for i in range(self.mc_passes):
-                outputs = self.model(input_tensor)
-                if i == 0:
-                    self.last_output = outputs
-                probs = torch.softmax(outputs, dim=1)
-                all_probs.append(probs.cpu().numpy()[0])
+            for _ in range(1, self.mc_passes):
+                outputs_mc = self.model(input_tensor)
+                probs_mc = torch.softmax(outputs_mc, dim=1)
+                all_probs.append(probs_mc.cpu().numpy()[0])
 
         self.model.eval()
 
+        # Aggregate results
         all_probs_np = np.array(all_probs)
         mean_probs = np.mean(all_probs_np, axis=0)
         uncertainty = float(np.mean(np.var(all_probs_np, axis=0)))
-
-        # Entropy-based uncertainty
         entropy = float(-np.sum(mean_probs * np.log(mean_probs + 1e-10)))
-
-        latency_ms = (time.perf_counter() - start_time) * 1000
+        
         pred_idx = int(np.argmax(mean_probs))
         confidence = float(mean_probs[pred_idx])
-
-        # Triage / referral logic
         cancer_prob = float(mean_probs[1]) if len(mean_probs) > 1 else 0.0
-        is_high_uncertainty = entropy > settings.UNCERTAINTY_THRESHOLD
+
+        # 3. Clinical Reconciliation Layer (Reduces False Positives)
+        # If AI says CANCER, but doesn't have high confidence OR has high uncertainty
+        # AND clinical indicators (red/white patches) are very low...
+        reconciled_prediction = self.classes[pred_idx]
+        reasoning = "AI Inference"
+        
+        if reconciled_prediction == "CANCER" and clinical_features:
+            red_score = clinical_features.get("red_patch_ratio", 0.0)
+            white_score = clinical_features.get("white_patch_ratio", 0.0)
+            
+            # Clinical Gating
+            is_marginal = (cancer_prob < 0.65) or (entropy > 0.35)
+            has_weak_visual_evidence = (red_score < 0.05) and (white_score < 0.05)
+            
+            if is_marginal and has_weak_visual_evidence:
+                # Downgrade to NON CANCER if marginal AI evidence lacks clinical support
+                reconciled_prediction = "NON CANCER"
+                reasoning = "Reconciled: Marginal AI evidence downgraded due to lack of pathologic color features."
+        
+        latency_ms = (time.perf_counter() - start_time) * 1000
+        is_high_uncertainty = (entropy > settings.UNCERTAINTY_THRESHOLD)
         needs_referral = (cancer_prob > settings.REFERRAL_THRESHOLD) or is_high_uncertainty
 
         return {
             "probabilities": {self.classes[i]: float(mean_probs[i]) for i in range(len(self.classes))},
-            "prediction": self.classes[pred_idx],
+            "prediction": reconciled_prediction,
+            "original_ai_prediction": self.classes[pred_idx], # Keep original for audit
             "confidence": confidence,
             "uncertainty": uncertainty,
             "entropy": entropy,
@@ -165,6 +189,7 @@ class InferenceService:
             "referral_score": cancer_prob,
             "high_uncertainty": is_high_uncertainty,
             "latency_ms": latency_ms,
+            "reasoning": reasoning
         }
 
     def generate_heatmap(self, output=None, class_idx: int = None) -> np.ndarray:
@@ -216,6 +241,7 @@ class InferenceService:
         return {
             "probabilities": {self.classes[i]: float(mean_probs[i]) for i in range(len(self.classes))},
             "prediction": self.classes[pred_idx],
+            "original_ai_prediction": self.classes[pred_idx],
             "confidence": float(mean_probs[pred_idx]),
             "uncertainty": uncertainty,
             "entropy": entropy,
@@ -223,9 +249,10 @@ class InferenceService:
             "referral_score": cancer_prob,
             "high_uncertainty": is_high_uncertainty,
             "latency_ms": latency_ms,
+            "reasoning": "Mock AI Inference"
         }
 
 
 # ── Singleton ───────────────────────────────────────────────────────
 # Set use_mock=False once model file is confirmed at settings.MODEL_PATH
-inference_service = InferenceService(use_mock=True)
+inference_service = InferenceService(use_mock=False)

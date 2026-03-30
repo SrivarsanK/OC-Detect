@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 from src.db.database import Base
 
-class CaseStatus(enum.Enum):
+class CaseStatus(str, enum.Enum):
     PENDING = "pending"
     PROCESSED = "processed"
     SYNCED = "synced"
@@ -38,6 +38,14 @@ class Case(Base):
     
     report_pdf_path = Column(String, nullable=True)
     report_json_path = Column(String, nullable=True)
+
+    # Clinical / Pathologic Fields (from biopsy report prototype)
+    accession_no = Column(String, nullable=True)
+    gross_description = Column(String, nullable=True)
+    microscopic_description = Column(String, nullable=True)
+    location = Column(String, nullable=True, default="Oral Cavity")
+    cpt_code = Column(String, nullable=True, default="88305")
+    comment = Column(String, nullable=True)
 
 
     

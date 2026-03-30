@@ -36,7 +36,15 @@ class IngestResponse(BaseModel):
 
 
 @router.post("/upload", response_model=IngestResponse)
-async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_image(
+    file: UploadFile = File(...), 
+    patient_id: str | None = None,
+    accession_no: str | None = None,
+    gross_description: str | None = None,
+    location: str | None = "Oral Cavity",
+    cpt_code: str | None = "88305",
+    db: Session = Depends(get_db)
+):
     # 1. Read binary
     contents = await file.read()
 
@@ -82,8 +90,8 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
             "feature_vector_length": len(features.get("feature_vector", [])),
         }
 
-    # 6. AI Inference (EfficientNet-B4 with MC Dropout)
-    inference_result = inference_service.predict(enhanced)
+    # 6. AI Inference (EfficientNet-B4 with MC Dropout + Clinical Reconciliation)
+    inference_result = inference_service.predict(enhanced, clinical_features=features_summary)
 
     # 7. Grad-CAM Heatmap
     heatmap_path = None
@@ -100,12 +108,17 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
     real_case_id = str(uuid.uuid4())
     case_data_for_report = {
         "id": real_case_id,
+        "patient_id": patient_id,
         "prediction_class": inference_result["prediction"],
         "confidence": inference_result["confidence"],
         "uncertainty": inference_result["uncertainty"],
         "entropy": inference_result.get("entropy", 0.0),
         "referral": inference_result["referral"],
         "features": features_summary,
+        "accession_no": accession_no,
+        "gross_description": gross_description,
+        "location": location,
+        "cpt_code": cpt_code
     }
 
     report_json_path = reporting_service.generate_json(case_data_for_report)
@@ -120,7 +133,11 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
     # 10. Database Persistence
     new_case = Case(
         id=real_case_id,
-        patient_id=None,
+        patient_id=patient_id,
+        accession_no=accession_no,
+        gross_description=gross_description,
+        location=location,
+        cpt_code=cpt_code,
         raw_path=raw_rel_path,
         enhanced_path=enhanced_rel_path,
         heatmap_path=heatmap_path,
