@@ -15,7 +15,8 @@ import {
   Search, 
   Menu, 
   X,
-  Terminal
+  Terminal,
+  MessageSquare
 } from 'lucide-react';
 
 import { cn } from "@/lib/utils";
@@ -50,11 +51,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const size = useWindowSize();
 
   const navItems = [
-    { label: 'Triage Stream', icon: LayoutDashboard, href: '/' },
+    { label: 'Triage Stream', icon: LayoutDashboard, href: '/triage' },
+    { label: 'AI Assistant', icon: MessageSquare, href: '/chat' },
     { label: 'Archive', icon: History, href: '/archive' },
     { label: 'AI Analytics', icon: Microscope, href: '/analytics' },
     { label: 'Node Settings', icon: Globe, href: '/settings' },
   ];
+
+  if (pathname === '/') {
+    return <main className="flex-1 w-full min-h-screen overflow-x-hidden">{children}</main>;
+  }
 
   return (
     <div className={cn(

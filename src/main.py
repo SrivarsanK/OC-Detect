@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from src.api import ingestion, cases, mock_cloud, features
+from src.api import ingestion, cases, mock_cloud, features, assistant
 from src.db.database import engine, Base
 import os
 
@@ -23,6 +23,7 @@ app.include_router(ingestion.router, prefix="/api/v1/ingest", tags=["Ingestion"]
 app.include_router(cases.router, prefix="/api/v1/cases", tags=["Cases"])
 app.include_router(mock_cloud.router, prefix="/api/v1/mock-cloud", tags=["Cloud Simulation"])
 app.include_router(features.router, prefix="/api/v1/features", tags=["Feature Engineering"])
+app.include_router(assistant.router, prefix="/api/v1", tags=["AI Assistant"])
 
 # Serve dashboard static files if built
 # Root path of the repo

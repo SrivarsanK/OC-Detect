@@ -1,322 +1,318 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { 
+  ShieldCheck, 
+  ArrowRight, 
+  Brain, 
   Activity, 
-  Download, 
+  Microscope, 
   FileText, 
-  Map, 
-  RefreshCcw,
+  Globe, 
   Terminal,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  CheckCircle2,
-  ShieldCheck,
-  Brain
+  Layers,
+  Zap,
+  Target
 } from 'lucide-react';
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
-const API_BASE = "http://localhost:8000/api/v1";
+const fadeInUp = {
+  initial: { opacity: 0, y: 30 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.8, ease: [0.16, 1, 0.3, 1] }
+};
 
-interface Case {
-  id: string;
-  prediction_class: string;
-  confidence: number;
-  uncertainty: number;
-  timestamp: string;
-  status: string;
-  report_pdf_path?: string;
-}
-
-export default function Home() {
-  const [cases, setCases] = useState<Case[]>([]);
-  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState<string | null>(null);
-  const [showOverlay, setShowOverlay] = useState(true);
-
-  useEffect(() => {
-    fetchCases();
-  }, []);
-
-  const fetchCases = async () => {
-    try {
-      setLoading(true);
-      const resp = await axios.get(`${API_BASE}/cases/`);
-      setCases(resp.data);
-    } catch (err) {
-      console.error("Failed to fetch cases", err);
-    } finally {
-      setTimeout(() => setLoading(false), 800);
+const staggerContainer = {
+  animate: {
+    transition: {
+      staggerChildren: 0.1
     }
-  };
+  }
+};
 
-  const handleSync = async (id: string) => {
-    try {
-      setSyncing(id);
-      await axios.post(`${API_BASE}/cases/${id}/sync`);
-      setTimeout(fetchCases, 2000); 
-    } catch (err) {
-      console.error("Sync failed", err);
-    } finally {
-      setSyncing(null);
-    }
-  };
-
-  const getStatusVariant = (status: string): "success" | "cyan" | "outline" | "default" | "secondary" | "destructive" => {
-    switch (status) {
-      case 'synced': return 'success';
-      case 'processed': return 'cyan';
-      default: return 'outline';
-    }
-  };
-
-  // Binary classification: CANCER / NON CANCER
-  const isCancer = (cls: string) => cls.toUpperCase() === 'CANCER';
-
-  const getTriageStyle = (triage: string) => 
-    isCancer(triage) ? 'text-rose-500' : 'text-emerald-500';
-
-  const getTriageBg = (triage: string) =>
-    isCancer(triage) 
-      ? 'bg-rose-500/5 border-rose-500/10' 
-      : 'bg-emerald-500/5 border-emerald-500/10';
-
-  const getBarColor = (triage: string) =>
-    isCancer(triage) ? 'bg-rose-500' : 'bg-emerald-500';
-
-  const cancerCount = cases.filter(c => isCancer(c.prediction_class)).length;
-  const normalCount = cases.filter(c => !isCancer(c.prediction_class)).length;
-
+export default function LandingPage() {
   return (
-    <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-cyan-500/30 overflow-x-hidden">
       
-      {/* Case Stream */}
-      <section className="flex-1 p-6 lg:p-12 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[radial-gradient(ellipse_at_top_left,rgba(6,182,212,0.05)_0%,transparent_50%)]">
-          <div className="mb-10 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6">
-            <div>
-                <h1 className="text-3xl lg:text-4xl font-outfit font-black tracking-tighter text-white">Case Triage</h1>
-                <div className="flex flex-wrap items-center gap-3 mt-4">
-                  <Badge variant="secondary" className="bg-slate-900 border-slate-800">Total: {cases.length}</Badge>
-                  {cancerCount > 0 && (
-                    <Badge variant="destructive" className="font-black">⚠ {cancerCount} Cancer Detected</Badge>
-                  )}
-                  {normalCount > 0 && (
-                    <Badge variant="secondary" className="font-black bg-emerald-900/40 text-emerald-400 border-emerald-800">✓ {normalCount} Normal</Badge>
-                  )}
-                </div>
-            </div>
-            <div className="lg:text-right">
-                <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest leading-none mb-2">EfficientNet-B4 Pipeline</p>
-                <Button variant="ghost" size="sm" onClick={fetchCases} className="text-xs font-bold text-slate-400 gap-2">
-                   <RefreshCcw className={cn("size-3", loading ? "animate-spin" : "")} /> 
-                   Refresh
-                </Button>
-            </div>
-          </div>
+      {/* 🌌 Atmospheric Background */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-cyan-500/10 blur-[150px] rounded-full animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-500/5 blur-[180px] rounded-full" />
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] mix-blend-overlay" />
+      </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 pb-24">
-            <AnimatePresence mode="popLayout">
-              {loading && cases.length === 0 ? (
-                Array(4).fill(0).map((_, i) => (
-                  <div key={i} className="h-[220px] rounded-[2.5rem] bg-slate-900/30 border border-slate-900 animate-pulse" />
-                ))
-              ) : cases.map((c, index) => (
-              <motion.div
-                key={c.id}
-                layout
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <Card 
-                  onClick={() => setSelectedCase(c)}
-                  className={cn(
-                    "group transition-all cursor-pointer relative bento-card border-[1.5px] overflow-hidden",
-                    selectedCase?.id === c.id 
-                    ? 'border-cyan-500 bg-slate-900 shadow-2xl' 
-                    : 'border-slate-800/60 bg-slate-900/20 hover:border-cyan-500/30'
-                  )}
-                >
-                  <CardHeader className="flex flex-row items-center justify-between pb-6 pt-8 px-8">
-                    <div className="flex items-center gap-4">
-                      <div className={cn(
-                        "size-12 rounded-xl flex items-center justify-center border transition-all duration-300",
-                        isCancer(c.prediction_class) 
-                          ? "bg-rose-500/10 border-rose-500/30" 
-                          : selectedCase?.id === c.id 
-                            ? "bg-cyan-500 border-cyan-400 shadow-lg shadow-cyan-500/30" 
-                            : "bg-slate-950 border-slate-800"
-                      )}>
-                          {isCancer(c.prediction_class) 
-                            ? <AlertTriangle className="size-6 text-rose-500" />
-                            : <FileText className={cn("size-6", selectedCase?.id === c.id ? "text-white" : "text-slate-600")} />
-                          }
-                      </div>
-                      <div>
-                          <CardDescription className="text-[10px] uppercase tracking-widest font-black opacity-50">
-                            {c.timestamp ? `NODE_${c.timestamp.split('T')[1]?.substring(0,5) || '00:00'}` : 'SCAN'}
-                          </CardDescription>
-                          <CardTitle className="text-lg">Case {c.id.substring(0, 8)}</CardTitle>
-                      </div>
-                    </div>
-                    <Badge variant={getStatusVariant(c.status)}>{c.status}</Badge>
-                  </CardHeader>
-
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center px-8 pb-8">
-                      <div className={cn("p-5 rounded-3xl border", getTriageBg(c.prediction_class))}>
-                        <p className="text-[10px] text-slate-500 font-black uppercase mb-1">AI Verdict</p>
-                        <p className={cn("text-2xl font-outfit font-black tracking-tight", getTriageStyle(c.prediction_class))}>{c.prediction_class}</p>
-                      </div>
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center text-[10px] font-black uppercase text-slate-600">
-                            <span>Confidence</span>
-                            <span className="text-white">{(c.confidence * 100).toFixed(0)}%</span>
-                        </div>
-                        <div className="h-2 bg-slate-950 rounded-full overflow-hidden p-[1px] border border-slate-900">
-                            <motion.div 
-                            initial={{ width: 0 }}
-                            animate={{ width: `${c.confidence * 100}%` }}
-                            className={cn("h-full rounded-full", getBarColor(c.prediction_class))}
-                            />
-                        </div>
-                      </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-            </AnimatePresence>
+      {/* 🧭 Navbar */}
+      <nav className="fixed top-0 inset-x-0 h-20 z-50 px-6 lg:px-12 flex items-center justify-between border-b border-white/5 backdrop-blur-xl bg-slate-950/20">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-cyan-600 rounded-lg shadow-lg shadow-cyan-500/20">
+            <ShieldCheck className="size-6 text-white" />
           </div>
+          <span className="text-xl font-outfit font-black tracking-tight text-white uppercase italic">OralGuard</span>
+        </div>
+        <div className="hidden md:flex items-center gap-8 text-[11px] font-black uppercase tracking-widest text-slate-400">
+           <a href="#tech" className="hover:text-cyan-400 transition-colors">Neural Architecture</a>
+           <a href="#workflow" className="hover:text-cyan-400 transition-colors">Workflow</a>
+           <a href="#about" className="hover:text-cyan-400 transition-colors">Clinical Standards</a>
+        </div>
+        <Link href="/triage">
+          <Button variant="outline" className="rounded-full px-8 bg-white/5 border-white/10 hover:bg-white/10 text-[11px] font-black uppercase tracking-widest h-11">
+             Enter Workstation <ArrowRight className="ml-2 size-3" />
+          </Button>
+        </Link>
+      </nav>
+
+      {/* 🚀 Hero Section */}
+      <section className="relative pt-40 pb-24 px-6 lg:px-12 max-w-7xl mx-auto flex flex-col items-center text-center">
+        <motion.div {...fadeInUp} transition={{ delay: 0.1 }}>
+          <Badge variant="cyan" className="mb-6 px-4 py-1.5 rounded-full border-cyan-500/20 bg-cyan-500/10 text-cyan-400 font-bold tracking-widest uppercase text-[10px]">
+             Accelerating Oncology Diagnostics
+          </Badge>
+        </motion.div>
+        
+        <motion.h1 
+          className="text-6xl md:text-8xl lg:text-9xl font-outfit font-black tracking-tighter text-white leading-[0.9] mb-8"
+          {...fadeInUp}
+        >
+          AI-Driven Oral <br />
+          <span className="bg-gradient-to-r from-cyan-400 via-emerald-400 to-cyan-500 bg-clip-text text-transparent">Cancer Triage.</span>
+        </motion.h1>
+
+        <motion.p 
+          className="text-slate-400 text-lg md:text-xl max-w-2xl leading-relaxed mb-12 font-medium"
+          {...fadeInUp}
+          transition={{ delay: 0.2 }}
+        >
+          Specialist-grade malignancy detection powered by EfficientNet-B4 and Grad-CAM explainable AI. Clinical registration, tissue analysis, and pathology reporting—all in one unified pipeline.
+        </motion.p>
+
+        <motion.div 
+          className="flex flex-col sm:flex-row gap-6"
+          {...fadeInUp}
+          transition={{ delay: 0.3 }}
+        >
+          <Link href="/scan">
+            <Button className="h-16 px-10 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-outfit font-black text-xl shadow-2xl shadow-cyan-900/40 gap-4 group">
+               Launch New Scan <Zap className="size-5 group-hover:scale-125 transition-transform" />
+            </Button>
+          </Link>
+          <Link href="/triage">
+            <Button variant="ghost" className="h-16 px-10 rounded-2xl border border-white/10 hover:bg-white/5 text-white font-outfit font-black text-xl gap-4">
+               Active Triage Portal <Activity className="size-5" />
+            </Button>
+          </Link>
+        </motion.div>
+
+        {/* Hero Visual */}
+        <motion.div 
+          className="mt-24 w-full aspect-[21/9] rounded-[3rem] border border-white/10 bg-slate-900/20 backdrop-blur-3xl overflow-hidden relative group"
+          initial={{ opacity: 0, scale: 0.95, y: 100 }}
+          whileInView={{ opacity: 1, scale: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        >
+           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10" />
+           <div className="absolute inset-0 opacity-40 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
+           
+           <div className="absolute inset-0 flex items-center justify-center">
+              <div className="relative w-full h-full p-12 lg:p-24 flex flex-col items-center justify-center">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-5xl relative z-20">
+                    {[
+                      { icon: Brain, label: 'EfficientNet-B4', desc: 'SOTA convolutional architecture fine-tuned for small-sample oncology datasets.' },
+                      { icon: Microscope, label: 'LRP Explainability', desc: 'Layer-wise Relevance Propagation and Grad-CAM for visual clinical verification.' },
+                      { icon: FileText, label: 'Clinical-Grade', desc: 'Fully compliant ABHA patient registry and pathologic reporting standards.' }
+                    ].map((item, i) => (
+                      <motion.div key={i} className="text-left space-y-4">
+                         <div className="size-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
+                           <item.icon className="size-6" />
+                         </div>
+                         <h3 className="text-2xl font-outfit font-black text-white">{item.label}</h3>
+                         <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+                      </motion.div>
+                    ))}
+                 </div>
+              </div>
+           </div>
+        </motion.div>
       </section>
 
-      {/* Evidence Panel */}
-      <AnimatePresence>
-      {selectedCase && (
-        <motion.section 
-          initial={{ x: 600 }}
-          animate={{ x: 0 }}
-          exit={{ x: 600 }}
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full lg:w-[500px] xl:w-[580px] border-l border-slate-900 bg-slate-950/90 backdrop-blur-3xl overflow-y-auto z-40 shadow-2xl custom-scrollbar relative"
-        >
-          <div className="p-8 lg:p-12 space-y-10 relative">
-            <div className="flex items-center justify-between">
-                <div className="font-outfit">
-                  <Badge variant="cyan" className="mb-3 px-4 font-black">Clinical Evidence</Badge>
-                  <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-white leading-none">Analysis</h2>
-                </div>
-                <div className="flex gap-2">
-                  <Button size="icon" className="h-12 w-12 bg-slate-900 border border-slate-800 text-cyan-400 rounded-2xl" onClick={() => window.open(`${API_BASE}/cases/${selectedCase.id}/report/pdf`, '_blank')}>
-                    <Download className="size-6" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-12 w-12 text-slate-500 rounded-2xl" onClick={() => setSelectedCase(null)}>
-                     <Terminal className="size-6" />
-                  </Button>
-                </div>
-            </div>
+      {/* 🧬 Tech Architecture Section */}
+      <section id="tech" className="py-32 px-6 lg:px-12 max-w-7xl mx-auto space-y-24">
+        <div className="flex flex-col items-center text-center">
+           <Badge className="mb-4 bg-emerald-500/10 text-emerald-400 border-emerald-500/20">The Diagnostic Engine</Badge>
+           <h2 className="text-4xl md:text-5xl font-outfit font-black tracking-tight text-white italic uppercase">Bespoke Pathologic Intelligence</h2>
+        </div>
 
-            {/* Metrics */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-slate-900/40 rounded-[2rem] border-slate-900 p-6 space-y-2">
-                  <p className="uppercase tracking-widest font-black text-[9px] text-slate-500">Uncertainty</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-outfit font-black text-white">{selectedCase.uncertainty.toFixed(3)}</span>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+           {/* Card 1: Dropout */}
+           <motion.div 
+             className="p-10 rounded-[2.5rem] bg-slate-900/30 border border-white/5 backdrop-blur-3xl hover:border-cyan-500/30 transition-all group"
+             whileHover={{ y: -5 }}
+           >
+              <div className="p-3 bg-cyan-600 rounded-xl w-fit mb-6 shadow-xl shadow-cyan-900/20 group-hover:scale-110 transition-transform">
+                <Target className="size-6 text-white" />
               </div>
-              <div className="bg-slate-900/40 rounded-[2rem] border-slate-900 p-6 space-y-2">
-                  <p className="uppercase tracking-widest font-black text-[9px] text-slate-500">Confidence</p>
-                  <div className="flex items-baseline gap-2">
-                    <span className={cn("text-4xl font-outfit font-black", getTriageStyle(selectedCase.prediction_class))}>
-                      {(selectedCase.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-              </div>
-            </div>
+              <h4 className="text-2xl font-outfit font-black text-white mb-4">MC Dropout Stability</h4>
+              <p className="text-slate-400 text-sm leading-relaxed font-medium">Running 20 parallel inference passes to calculate Bayesian uncertainty. If the AI is unsure, the specialist is notified immediately with a high-uncertainty flag.</p>
+           </motion.div>
 
-            {/* Scan Overlay */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between px-2">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-cyan-500 inline-flex items-center gap-2">
-                    <Map className="size-4" /> AI Grad-CAM Overlay
-                  </p>
-                  <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setShowOverlay(!showOverlay)}
-                  className="text-[9px] font-black uppercase text-slate-500 hover:text-white"
-                  >
-                    {showOverlay ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                  </Button>
+           {/* Card 2: Feature Engineering */}
+           <motion.div 
+             className="p-10 rounded-[2.5rem] bg-slate-900/30 border border-white/5 backdrop-blur-3xl hover:border-cyan-500/30 transition-all group"
+             whileHover={{ y: -5 }}
+           >
+              <div className="p-3 bg-cyan-600 rounded-xl w-fit mb-6 shadow-xl shadow-cyan-900/20 group-hover:scale-110 transition-transform">
+                <Layers className="size-6 text-white" />
               </div>
-              
-              <div className="aspect-square bg-slate-950 rounded-[3rem] border border-slate-900 overflow-hidden relative shadow-2xl">
-                  <img 
-                    src={`${API_BASE}/cases/${selectedCase.id}/image/enhanced`} 
-                    alt="Scan"
-                    className={cn(
-                      "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
-                      showOverlay ? "opacity-40 grayscale" : "opacity-100 grayscale-0"
-                    )}
-                  />
-                  {showOverlay && (
-                    <img 
-                      src={`${API_BASE}/cases/${selectedCase.id}/image/heatmap`} 
-                      alt="Heatmap"
-                      className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-80"
-                    />
-                  )}
-                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 p-8 pt-20">
-                      <div className="flex items-start gap-4">
-                        <div className={cn("w-1 h-12 rounded-full shrink-0", isCancer(selectedCase.prediction_class) ? "bg-rose-600" : "bg-cyan-600")} />
-                        <p className="text-xs font-bold text-slate-300 leading-relaxed">
-                            {isCancer(selectedCase.prediction_class)
-                              ? "Cancer signature detected. AI flagged potential malignant patterns. Immediate specialist referral and biopsy recommended."
-                              : "No significant malignant patterns detected. Routine monitoring recommended."}
-                        </p>
+              <h4 className="text-2xl font-outfit font-black text-white mb-4">Pathologic Reconciliation</h4>
+              <p className="text-slate-400 text-sm leading-relaxed font-medium">Unique clinical gating layer. Reconciles raw AI predictions with handcrafted pathological features like Red/White patch ratios to reduce false positives.</p>
+           </motion.div>
+
+           {/* Card 3: Mobile Sync */}
+           <motion.div 
+             className="p-10 rounded-[2.5rem] bg-slate-900/30 border border-white/5 backdrop-blur-3xl hover:border-cyan-500/30 transition-all group"
+             whileHover={{ y: -5 }}
+           >
+              <div className="p-3 bg-cyan-600 rounded-xl w-fit mb-6 shadow-xl shadow-cyan-900/20 group-hover:scale-110 transition-transform">
+                <Globe className="size-6 text-white" />
+              </div>
+              <h4 className="text-2xl font-outfit font-black text-white mb-4">Edge-to-Cloud Pipeline</h4>
+              <p className="text-slate-400 text-sm leading-relaxed font-medium">Local-first inference for sub-second results at the Point-of-Care, with automated cloud synchronization for longitudinal patient records.</p>
+           </motion.div>
+        </div>
+      </section>
+
+      {/* 🧭 Workflow Section */}
+      <section id="workflow" className="py-32 bg-slate-900/20 border-y border-white/5 px-6 lg:px-12">
+         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <div className="space-y-8">
+               <Badge className="bg-cyan-500/10 text-cyan-400 border-cyan-500/20">Unified Pipeline</Badge>
+               <h2 className="text-5xl font-outfit font-black text-white tracking-tighter leading-none">From Registration <br />to Triage Reporting.</h2>
+               <div className="space-y-6">
+                  {[
+                    { step: '01', title: 'Clinical Enrollment', desc: 'Securely register patient biographics, ABHA identifiers, and anatomical scan sites.' },
+                    { step: '02', title: 'Multi-Modal Scan', desc: 'High-resolution image capture with real-time CLAHE enhancement for clinical clarity.' },
+                    { step: '03', title: 'Deep Neural Triage', desc: 'Bayesian-stabilized inference determines malignancy probability with visual heatmaps.' },
+                    { step: '04', title: 'Pathology Report', desc: 'Automated generation of specialist-grade reports with ICD-compliance and diagnostic reasoning.' }
+                  ].map((item, i) => (
+                    <div key={i} className="flex gap-6 items-start group cursor-default">
+                       <span className="text-4xl font-outfit font-black text-slate-800 group-hover:text-cyan-500 transition-colors uppercase">{item.step}</span>
+                       <div className="space-y-1">
+                          <h4 className="text-xl font-outfit font-black text-white">{item.title}</h4>
+                          <p className="text-sm text-slate-500 font-medium leading-relaxed">{item.desc}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </div>
+            <div className="relative aspect-square">
+                <div className="absolute inset-0 bg-cyan-600/20 blur-[100px] rounded-full" />
+                <div className="relative h-full w-full rounded-[4rem] border-2 border-cyan-500/20 bg-slate-950 overflow-hidden shadow-2xl p-4">
+                   <div className="h-full w-full bg-slate-900/50 rounded-[3.5rem] border border-white/5 flex flex-col p-10 justify-between">
+                      <div className="flex justify-between items-start">
+                         <div className="space-y-2">
+                           <p className="text-[10px] text-cyan-500 font-black uppercase tracking-widest">Case ID: OG-20240328-912</p>
+                           <h4 className="text-3xl font-outfit font-black text-white">Diagnostic Results</h4>
+                         </div>
+                         <Badge variant="destructive" className="animate-pulse">Referral Indicated</Badge>
                       </div>
-                  </div>
-              </div>
-            </div>
+                      
+                      <div className="aspect-video bg-black rounded-3xl border border-white/5 relative overflow-hidden">
+                         <div className="absolute top-4 left-4 p-2 bg-rose-500/20 backdrop-blur-md rounded-lg text-rose-500 font-black text-[10px] uppercase border border-rose-500/30">Malignancy Hotspot</div>
+                         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(244,63,94,0.3)_0%,transparent_60%)]" />
+                      </div>
 
-            <div className="flex flex-col gap-4">
-              <Button 
-                className="w-full h-16 bg-cyan-600 hover:bg-cyan-500 text-white font-outfit font-black text-lg rounded-[2.5rem] shadow-xl shadow-cyan-900/10"
-                onClick={() => window.open(`${API_BASE}/cases/${selectedCase.id}/report/pdf`, '_blank')}
-              >
-                View Clinical Report
-              </Button>
-              <Button 
-                className="w-full h-14 bg-slate-800 hover:bg-slate-700 text-white font-outfit font-black rounded-[2.5rem] border border-slate-700"
-                onClick={() => handleSync(selectedCase.id)}
-                disabled={syncing === selectedCase.id}
-              >
-                {syncing === selectedCase.id ? 'Syncing...' : 'Sync to Cloud'}
-              </Button>
+                      <div className="space-y-4">
+                         <div className="flex justify-between text-xs font-black uppercase tracking-widest text-slate-500">
+                           <span>Malignancy Confidence</span>
+                           <span className="text-rose-500">97.4%</span>
+                         </div>
+                         <div className="h-2 bg-slate-950 rounded-full overflow-hidden p-[1px] border border-slate-800">
+                           <div className="h-full w-[97%] bg-rose-500 rounded-full" />
+                         </div>
+                      </div>
+                   </div>
+                </div>
             </div>
-          </div>
-        </motion.section>
-      )}
-      </AnimatePresence>
+         </div>
+      </section>
+
+      {/* 🏁 CTA Section */}
+      <section className="py-40 px-6 text-center max-w-4xl mx-auto space-y-12">
+         <h2 className="text-5xl md:text-7xl font-outfit font-black text-white tracking-tighter italic uppercase animate-glitch">Ready for Clinical <br />Specialist Deployment.</h2>
+         <p className="text-slate-400 text-lg font-medium leading-relaxed">OralGuard integrates seamlessly into oncology clinics, public health centers, and diagnostic labs. Start your first clinical session now.</p>
+         <Link href="/triage">
+           <Button className="h-20 px-16 rounded-[2.5rem] bg-white text-slate-950 hover:bg-slate-200 font-outfit font-black text-2xl shadow-2xl shadow-cyan-500/20 gap-6 transition-all active:scale-95 group">
+              Get Started <ArrowRight className="size-6 group-hover:translate-x-3 transition-transform" />
+           </Button>
+         </Link>
+      </section>
+
+      {/* 📟 Footer */}
+      <footer className="py-20 border-t border-white/5 px-6 lg:px-12 bg-slate-950">
+         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+            <div className="space-y-6">
+               <div className="flex items-center gap-3">
+                 <div className="p-2 bg-slate-800 rounded-lg">
+                   <ShieldCheck className="size-5 text-white" />
+                 </div>
+                 <span className="text-xl font-outfit font-black text-white tracking-tight uppercase">OralGuard</span>
+               </div>
+               <p className="text-sm text-slate-500 font-medium max-w-xs leading-relaxed italic">The next-generation diagnostic interface for early oral oncology detection and clinical triage.</p>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-16">
+               <div className="space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Technology</p>
+                  <ul className="space-y-2 text-sm text-slate-500 font-medium">
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Inference Pipeline</li>
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Bayesian Uncertainty</li>
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">XAI Explainability</li>
+                  </ul>
+               </div>
+               <div className="space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">Clinical</p>
+                  <ul className="space-y-2 text-sm text-slate-500 font-medium">
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Reporting Standards</li>
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Pathology Logic</li>
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">ABHA Integration</li>
+                  </ul>
+               </div>
+               <div className="space-y-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white">System</p>
+                  <ul className="space-y-2 text-sm text-slate-500 font-medium">
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Local Node</li>
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Cloud Sync</li>
+                     <li className="hover:text-cyan-400 transition-colors cursor-pointer">Developer API</li>
+                  </ul>
+               </div>
+            </div>
+         </div>
+         <div className="max-w-7xl mx-auto pt-20 mt-20 border-t border-white/5 flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-slate-700">
+            <span>&copy; 2026 ORALGUARD AI PROJECT</span>
+            <div className="flex items-center gap-6">
+               <span className="flex items-center gap-2"><Terminal className="size-3" /> PIPELINE_STABLE</span>
+            </div>
+         </div>
+      </footer>
 
       <style jsx global>{`
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #0f172a; border-radius: 10px; }
-        .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #0f172a transparent; }
-        .bento-card { transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100;400;700;900&display=swap');
+        .font-outfit { font-family: 'Outfit', sans-serif; }
+        
+        .animate-glitch {
+           animation: glitch 5s infinite;
+        }
+
+        @keyframes glitch {
+          0% { text-shadow: none; }
+          20% { text-shadow: 2px 0 0 rgba(6, 182, 212, 0.4), -2px 0 0 rgba(244, 63, 94, 0.4); }
+          21% { text-shadow: none; }
+          100% { text-shadow: none; }
+        }
       `}</style>
     </div>
   );
