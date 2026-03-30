@@ -1,17 +1,30 @@
 # Technology Stack
 
-## Core
-- **Agent Framework:** Antigravity + Get-Shit-Done (GSD) v1.28.0
-- **Skill System:** Vercel Skills / Open Agent Skills
+## Backend (Python)
+- **Framework:** FastAPI + Uvicorn (ASGI)
+- **AI/ML:** PyTorch + TorchVision (MobileNetV2), timm, NumPy
+- **Image Processing:** OpenCV (`opencv-python-headless`), Albumentations
+- **Database:** SQLAlchemy ORM + SQLite (local) / Postgres (cloud)
+- **Reporting:** fpdf2 (PDF), stdlib json (JSON)
+- **Sync:** httpx, tenacity (retry logic), requests
+- **CLI/TUI:** Click + Rich
+- **Config:** pydantic-settings (BaseSettings from .env)
 
-## Dependencies
-- `find-skills` (v1.0.0 via vercel-labs/skills)
-- `get-shit-done-cc` (v1.28.0 via npx)
+## Frontend (Next.js Dashboard)
+- **Framework:** Next.js 16 + React 19 + TypeScript
+- **Styling:** TailwindCSS v4 + tailwindcss-animate + tw-animate-css
+- **Components:** shadcn/ui + @base-ui/react + lucide-react
+- **HTTP Client:** axios
+- **Animation:** framer-motion
 
-## Configuration
-- `.agent/`: GSD and skills configuration
-- `.gitignore`: Configured to ignore agent-specific metadata
-- `skills-lock.json`: Lock file for agent skills
+## DevOps / Infrastructure
+- **Containerization:** Docker + docker-compose
+- **Model Version:** `v1.1.0-mobilenet-v2-edge-impulse`
+- **Target Hardware:** NVIDIA Jetson Nano (edge), Android (mobile)
+- **Agent Tooling:** Antigravity + GSD v1.28.0
 
-## Runtime
-- Node.js (implicit via `npx` and `.cjs` tools)
+## Config Files
+- `requirements.txt` — Python deps
+- `dashboard/package.json` — JS deps
+- `src/core/config.py` — Pydantic settings (model version, classes, thresholds)
+- `Dockerfile` + `docker-compose.yml` — containerised backend

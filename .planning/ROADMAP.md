@@ -76,7 +76,7 @@ OralGuard is being built as a standard, modular AI screening solution. We start 
 | 3. Explainability & Safety | 2/2 | Complete | 2026-03-23 |
 | 4. Structured Reporting | 2/2 | Complete | 2026-03-23 |
 | 5. Cloud Synchronization | 2/2 | Complete | 2026-03-23 |
-| 6. Web Dashboard & TUI | 0/2 | Ready to plan | - |
+| 6. Web Dashboard & TUI | 2/2 | Complete | 2026-03-23 |
 
 
 

@@ -13,3 +13,10 @@ fpdf2
 httpx
 tenacity
 requests
+albumentations
+seaborn
+tqdm
+matplotlib
+scikit-learn
+rich
+click

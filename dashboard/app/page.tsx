@@ -87,9 +87,13 @@ export default function Home() {
     }
   };
 
+  // Classes sourced from SrivarsanK/oral-cancer (Edge Impulse MobileNetV2)
+  const HIGH_RISK = ['oral malignant melanoma', 'squamous cell carcinoma'];
+  const MEDIUM_RISK = ['lichen planus'];
+
   const getTriageStyle = (triage: string) => {
-    if (['Malignant', 'Pre-malignant'].includes(triage)) return 'text-rose-500';
-    if (triage === 'Benign') return 'text-amber-500';
+    if (HIGH_RISK.includes(triage.toLowerCase())) return 'text-rose-500';
+    if (MEDIUM_RISK.includes(triage.toLowerCase())) return 'text-amber-500';
     return 'text-emerald-500';
   };
 
@@ -103,8 +107,11 @@ export default function Home() {
                 <h1 className="text-3xl lg:text-4xl font-outfit font-black tracking-tighter text-white">Case Triage</h1>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <Badge variant="secondary" className="bg-slate-900 border-slate-800">Total: {cases.length}</Badge>
-                  {cases.filter(c => ['Malignant', 'Pre-malignant'].includes(c.prediction_class)).length > 0 && (
-                    <Badge variant="destructive" className="font-black">Urgent Focus Needed</Badge>
+                  {cases.filter(c => HIGH_RISK.includes(c.prediction_class.toLowerCase())).length > 0 && (
+                    <Badge variant="destructive" className="font-black">⚠ Urgent: Malignancy Detected</Badge>
+                  )}
+                  {cases.filter(c => MEDIUM_RISK.includes(c.prediction_class.toLowerCase())).length > 0 && (
+                    <Badge variant="secondary" className="font-black bg-amber-900/40 text-amber-400 border-amber-800">Watch: Lichen Planus</Badge>
                   )}
                 </div>
             </div>
@@ -159,7 +166,9 @@ export default function Home() {
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center px-8 pb-8">
                       <div className={cn(
                         "p-5 rounded-3xl border",
-                        ['Malignant', 'Pre-malignant'].includes(c.prediction_class) ? "bg-rose-500/5 border-rose-500/10" : "bg-emerald-500/5 border-emerald-500/10"
+                        HIGH_RISK.includes(c.prediction_class.toLowerCase()) ? "bg-rose-500/5 border-rose-500/10" :
+                        MEDIUM_RISK.includes(c.prediction_class.toLowerCase()) ? "bg-amber-500/5 border-amber-500/10" :
+                        "bg-emerald-500/5 border-emerald-500/10"
                       )}>
                         <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Verdict</p>
                         <p className={cn("text-2xl font-outfit font-black tracking-tight", getTriageStyle(c.prediction_class))}>{c.prediction_class}</p>
@@ -173,7 +182,10 @@ export default function Home() {
                             <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${c.confidence * 100}%` }}
-                            className={cn("h-full rounded-full", getTriageStyle(c.prediction_class).replace('text-', 'bg-'))}
+                            className={cn("h-full rounded-full",
+                              HIGH_RISK.includes(c.prediction_class.toLowerCase()) ? 'bg-rose-500' :
+                              MEDIUM_RISK.includes(c.prediction_class.toLowerCase()) ? 'bg-amber-500' : 'bg-emerald-500'
+                            )}
                             />
                         </div>
                       </div>
@@ -245,23 +257,29 @@ export default function Home() {
               
               <div className="aspect-square bg-slate-950 rounded-[3rem] border border-slate-900 overflow-hidden relative shadow-2xl">
                   <img 
-                    src={`/api/placeholder/800/800`} 
+                    src={`${API_BASE}/cases/${selectedCase.id}/image/enhanced`} 
                     alt="Scan"
                     className={cn(
-                      "w-full h-full object-cover transition-opacity duration-700",
-                      showOverlay ? "opacity-30 grayscale" : "opacity-100 grayscale-0"
+                      "absolute inset-0 w-full h-full object-cover transition-opacity duration-700",
+                      showOverlay ? "opacity-40 grayscale" : "opacity-100 grayscale-0"
                     )}
                   />
                   {showOverlay && (
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(244,63,94,0.3)_0%,transparent_70%)] mix-blend-screen pointer-events-none">
-                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-40 bg-rose-500/10 rounded-full blur-3xl animate-pulse" />
-                    </div>
+                    <img 
+                      src={`${API_BASE}/cases/${selectedCase.id}/image/heatmap`} 
+                      alt="Heatmap"
+                      className="absolute inset-0 w-full h-full object-cover mix-blend-screen opacity-80"
+                    />
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 p-8 pt-20">
                       <div className="flex items-start gap-4">
                         <div className="w-1 h-12 bg-cyan-600 rounded-full shrink-0" />
                         <p className="text-xs font-bold text-slate-300 leading-relaxed">
-                            Deep-texture activation found in primary specimen. Correlations suggest higher vigilance.
+                            {HIGH_RISK.includes(selectedCase.prediction_class.toLowerCase())
+                              ? "High-risk malignancy signature detected. Immediate specialist review required."
+                              : MEDIUM_RISK.includes(selectedCase.prediction_class.toLowerCase())
+                              ? "Pre-malignant condition (Lichen Planus) detected. Close monitoring recommended."
+                              : "No significant malignant patterns detected in primary specimen."}
                         </p>
                       </div>
                   </div>

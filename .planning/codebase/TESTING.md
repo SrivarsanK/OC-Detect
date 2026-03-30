@@ -1,11 +1,15 @@
 # Testing Strategy
 
 ## Current State
-- No user-facing testing framework is yet configured (greenfield project).
+- **Integration simulation:** `tests/simulate_screening.py` — end-to-end smoke test that posts a sample image to the running API and checks the response
+- **Manual TUI testing:** `python -m src.tui ingest test_image.jpg`
+- **No unit test framework configured** (pytest not yet added)
 
-## Integration
-- **GSD Verifier:** Can be enabled in `.planning/config.json` to verify phase deliverables match goals.
+## Mock Mode
+- `InferenceService(use_mock=True)` — default mode; generates deterministic random predictions from image variance seed, no GPU required
+- `ImageProcessor` — real CLAHE/blur pipeline runs even in mock mode
 
-## Potential Future Frameworks
-- **Vitest / Jest:** Common stacks for Node.js environments.
-- **Playwright:** E2E testing for frontend layers.
+## Planned
+- **pytest** — Unit tests for service layer (ImageProcessor, InferenceService, ReportingService)
+- **GSD Verifier** — Phase deliverable validation via `.planning/config.json`
+- **Playwright** — E2E tests for Next.js dashboard (scan upload flow, dashboard display)

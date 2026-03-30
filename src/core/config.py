@@ -5,9 +5,14 @@ class Settings(BaseSettings):
     LAPLACIAN_THRESHOLD: float = 50.0
     STORAGE_DIR: str = ".oral_data"
     CLOUD_API_URL: str = "http://localhost:8000/api/v1/mock-cloud/cases"
-    MODEL_VERSION: str = "v1.0.0-efficientnet-b4"
+    MODEL_VERSION: str = "v1.1.0-mobilenet-v2-edge-impulse"
 
-    CLASSES: list[str] = ["Normal", "Benign", "Pre-malignant", "Malignant"]
+    CLASSES: list[str] = [
+        "Normal",
+        "lichen planus",
+        "oral malignant melanoma",
+        "squamous cell carcinoma"
+    ]
     REFERRAL_THRESHOLD: float = 0.35
     
     class Config:

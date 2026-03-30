@@ -14,17 +14,19 @@ class InferenceService:
         self.use_mock = use_mock
         self.gradients = None
         self.activations = None
+        self.last_output = None
         
         if not use_mock:
-            # Load actual EfficientNet-B4
-            self.model = models.efficientnet_b4(weights=None)
+            # Load MobileNetV2 (matching Edge Impulse project architecture)
+            self.model = models.mobilenet_v2(weights=models.MobileNet_V2_Weights.IMAGENET1K_V1)
             num_ftrs = self.model.classifier[1].in_features
             self.model.classifier[1] = nn.Linear(num_ftrs, len(self.classes))
             self.model.to(self.device)
             self.model.eval()
-            # Register hooks for Grad-CAM on the last convolution layer
-            self.model.features[8].register_forward_hook(self._save_activations)
-            self.model.features[8].register_full_backward_hook(self._save_gradients)
+            
+            # Register hooks for Grad-CAM on the last convolution layer (features[18])
+            self.model.features[18].register_forward_hook(self._save_activations)
+            self.model.features[18].register_full_backward_hook(self._save_gradients)
         else:
             print(f"Warning: Running in MOCK mode for InferenceService ({self.model_version})")
 
@@ -34,94 +36,95 @@ class InferenceService:
     def _save_gradients(self, module, grad_input, grad_output):
         self.gradients = grad_output[0]
 
-    def generate_heatmap(self, output, class_idx) -> np.ndarray:
-        """
-        Generate Grad-CAM heatmap for a given class index.
-        """
+    def generate_heatmap(self, output=None, class_idx=0) -> np.ndarray:
         if self.use_mock:
-            # Random mock heatmap
-            return np.random.rand(380, 380)
+            return np.random.rand(224, 224)
 
-        # 1. Backpropagateto the target class
+        target_output = output if output is not None else self.last_output
+        if target_output is None:
+            return np.random.rand(224, 224)
+
         self.model.zero_grad()
-        output[0, class_idx].backward(retain_graph=True)
+        target_output[0, class_idx].backward(retain_graph=True)
         
-        # 2. Pool the gradients across channels
+        if self.gradients is None or self.activations is None:
+            return np.random.rand(224, 224)
+
         pooled_gradients = torch.mean(self.gradients, dim=[0, 2, 3])
         
-        # 3. Weight the activations by pooled gradients
-        for i in range(self.activations.shape[1]):
-            self.activations[:, i, :, :] *= pooled_gradients[i]
+        # Clone activations to avoid modifying them in-place for subsequent calls
+        activations = self.activations.detach().clone()
+        for i in range(activations.shape[1]):
+            activations[:, i, :, :] *= pooled_gradients[i]
             
-        # 4. Average channels and apply ReLU
-        heatmap = torch.mean(self.activations, dim=1).squeeze()
+        heatmap = torch.mean(activations, dim=1).squeeze()
         heatmap = torch.maximum(heatmap, torch.zeros_like(heatmap))
-        
-        # 5. Normalize
-        heatmap /= torch.max(heatmap)
+        heatmap /= (torch.max(heatmap) + 1e-8)
         return heatmap.detach().cpu().numpy()
 
     def preprocess(self, image: np.ndarray) -> torch.Tensor:
-
         """
-        Normalize and resize image for EfficientNet-B4.
-        Target: 380x380 (B4 standard input).
+        Resize image for MobileNetV2 (224x224 standard).
         """
         import cv2
-        resized = cv2.resize(image, (380, 380))
-        # Normalize (standard ImageNet mean/std)
-        img_tensor = torch.from_numpy(resized).permute(2, 0, 1).float() / 255.0
-        # Placeholder normalization
+        resized = cv2.resize(image, (224, 224))
+        # RGB conversion (if input was BGR)
+        img_rgb = cv2.cvtColor(resized, cv2.COLOR_BGR2RGB)
+        img_tensor = torch.from_numpy(img_rgb).permute(2, 0, 1).float() / 255.0
+        
+        # Standard normalization for ImageNet
+        mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+        img_tensor = (img_tensor - mean) / std
+        
         return img_tensor.unsqueeze(0).to(self.device)
 
     def predict(self, image: np.ndarray) -> Dict[str, Any]:
-        """
-        Run inference on an image and return softmax probabilities with uncertainty.
-        """
         start_time = time.perf_counter()
-        
         num_passes = 10
+        self.last_output = None
+        
         if self.use_mock:
-            # Mock variance based on image sharpness/variance
             import cv2
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             var_val = gray.var()
             np.random.seed(int(var_val) % 1000)
-            
-            # Generate 10 mock distributions
             all_probs = [np.random.dirichlet(np.ones(len(self.classes)), size=1)[0] for _ in range(num_passes)]
         else:
             all_probs = []
             input_tensor = self.preprocess(image)
             
-            # Switch only Dropout layers to train mode (MC Dropout)
+            # Switch Dropout layers for MC Dropout
             for m in self.model.modules():
                 if isinstance(m, nn.Dropout):
-                    m.train()
+                    if hasattr(m, 'train'):
+                        m.train()
             
-            with torch.no_grad():
-                for _ in range(num_passes):
+            with torch.enable_grad(): # Need grads for Grad-CAM later
+                for i in range(num_passes):
                     outputs = self.model(input_tensor)
-                    probs = torch.softmax(outputs, dim=1).cpu().numpy()[0]
-                    all_probs.append(probs)
+                    if i == 0:
+                        self.last_output = outputs
+                    probs = torch.softmax(outputs, dim=1)
+                    all_probs.append(probs.detach().cpu().numpy()[0])
 
-        # Calculate Mean and Variance
+        # Average and compute variance
         all_probs_np = np.array(all_probs)
         mean_probs = np.mean(all_probs_np, axis=0)
-        uncertainty = np.mean(np.var(all_probs_np, axis=0)) # Mean variance across classes
+        uncertainty = np.mean(np.var(all_probs_np, axis=0))
 
         end_time = time.perf_counter()
         latency_ms = (end_time - start_time) * 1000
         
-        print(f"[Inference] Latency: {latency_ms:.2f}ms | Accelerate: {'MOCK' if self.use_mock else self.device}")
-
         result = {self.classes[i]: float(mean_probs[i]) for i in range(len(self.classes))}
         
-        # Calculate referral logic
-        # Class 0: Normal, Class 1: Benign, Class 2: Pre-malignant, Class 3: Malignant
-        referral_score = result["Pre-malignant"] + result["Malignant"]
+        # Referral logic for new classes
+        # lichen planus, oral malignant melanoma, squamous cell carcinoma
+        # All non-normal results are risky, but OMM and SCC are high risk.
+        malignant_score = result.get("oral malignant melanoma", 0) + result.get("squamous cell carcinoma", 0)
+        lp_score = result.get("lichen planus", 0)
+        referral_score = malignant_score + (0.5 * lp_score)
         
-        # Safety Overwrite: If uncertainty is high (>0.05), force referral
         uncertainty_threshold = 0.05
         is_high_uncertainty = float(uncertainty) > uncertainty_threshold
         needs_referral = (referral_score > settings.REFERRAL_THRESHOLD) or is_high_uncertainty
@@ -133,8 +136,8 @@ class InferenceService:
             "uncertainty": float(uncertainty),
             "referral": needs_referral,
             "referral_score": float(referral_score),
-            "high_uncertainty": is_high_uncertainty
+            "high_uncertainty": is_high_uncertainty,
+            "latency_ms": latency_ms
         }
-
 
 inference_service = InferenceService(use_mock=True)

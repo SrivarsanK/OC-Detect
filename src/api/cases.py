@@ -58,7 +58,7 @@ def download_pdf_report(case_id: str, db: Session = Depends(get_db)):
     full_path = os.path.join(settings.STORAGE_DIR, case.report_pdf_path)
     return FileResponse(
         path=full_path, 
-        filename=f"OralGuard_Report_{str(case_id)[:8]}.pdf",
+        filename=f"OralGuard_Report_{case_id[:8]}.pdf",
         media_type="application/pdf"
     )
 
@@ -77,3 +77,39 @@ def get_json_report(case_id: str, db: Session = Depends(get_db)):
         filename=f"case_{case_id}.json",
         media_type="application/json"
     )
+
+@router.get("/{case_id}/image/raw")
+def get_raw_image(case_id: str, db: Session = Depends(get_db)):
+    """
+    Get the raw input image.
+    """
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case or not case.raw_path:
+        raise HTTPException(status_code=404, detail="Raw image not found")
+    
+    full_path = os.path.join(settings.STORAGE_DIR, case.raw_path)
+    return FileResponse(full_path)
+
+@router.get("/{case_id}/image/enhanced")
+def get_enhanced_image(case_id: str, db: Session = Depends(get_db)):
+    """
+    Get the CLAHE-enhanced image.
+    """
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case or not case.enhanced_path:
+        raise HTTPException(status_code=404, detail="Enhanced image not found")
+    
+    full_path = os.path.join(settings.STORAGE_DIR, case.enhanced_path)
+    return FileResponse(full_path)
+
+@router.get("/{case_id}/image/heatmap")
+def get_heatmap_image(case_id: str, db: Session = Depends(get_db)):
+    """
+    Get the Grad-CAM heatmap image.
+    """
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case or not case.heatmap_path:
+        raise HTTPException(status_code=404, detail="Heatmap image not found")
+    
+    full_path = os.path.join(settings.STORAGE_DIR, case.heatmap_path)
+    return FileResponse(full_path)

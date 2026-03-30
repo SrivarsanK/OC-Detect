@@ -10,16 +10,12 @@ import {
   Microscope, 
   Globe, 
   ShieldCheck, 
-  Plus, 
-  Settings, 
+  Plus,
   Bell, 
   Search, 
   Menu, 
   X,
-  RefreshCcw,
-  Stethoscope,
-  Terminal,
-  Activity
+  Terminal
 } from 'lucide-react';
 
 import { cn } from "@/lib/utils";
@@ -218,7 +214,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               )}
            </div>
            <div className="flex items-center gap-4">
-              <span>PREDICTIVE ACCURACY: 99.4%</span>
+              <span>MODEL: MobileNetV2 (Edge Impulse)</span>
               <Separator orientation="vertical" className="h-4 bg-slate-900" />
               <div className="flex items-center gap-2">
                  <span>&copy; ORALGUARD</span>

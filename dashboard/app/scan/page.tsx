@@ -26,14 +26,36 @@ import { Badge } from "@/components/ui/badge";
 
 const API_BASE = "http://localhost:8000/api/v1";
 
+interface IngestResponse {
+  id: string;
+  filename: string;
+  quality: 'pass' | 'fail';
+  blur_score: number;
+  prediction: string;
+  confidence: number;
+  uncertainty: number;
+  referral: boolean;
+  heatmap_path?: string;
+  report_pdf_path?: string;
+  message: string;
+}
+
 export default function ScanPage() {
   const [mode, setMode] = useState<'camera' | 'upload'>('camera');
   const [image, setImage] = useState<string | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<IngestResponse | null>(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
+
+  // Classes sourced from SrivarsanK/oral-cancer (Edge Impulse MobileNetV2)
+  const HIGH_RISK = ['oral malignant melanoma', 'squamous cell carcinoma'];
+  const MEDIUM_RISK = ['lichen planus'];
+  const isHighRisk = (cls: string) => HIGH_RISK.includes(cls.toLowerCase());
+  const isMediumRisk = (cls: string) => MEDIUM_RISK.includes(cls.toLowerCase());
+  const getVerdictColor = (cls: string) =>
+    isHighRisk(cls) ? 'text-rose-500' : isMediumRisk(cls) ? 'text-amber-500' : 'text-emerald-500';
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -54,7 +76,7 @@ export default function ScanPage() {
         video: { facingMode: 'environment', width: { ideal: 1210 } } 
       });
       if (videoRef.current) videoRef.current.srcObject = stream;
-    } catch (err) {
+    } catch {
       setError("Camera access blocked by specialist protocol.");
       setIsCameraActive(false);
     }
@@ -107,7 +129,7 @@ export default function ScanPage() {
       const res = await axios.post(`${API_BASE}/ingest/upload`, fd);
       setResult(res.data);
       if (res.data.quality === 'fail') setError(res.data.message);
-    } catch (err) {
+    } catch {
       setError("Cloud ingestion failure.");
     } finally {
       setIsLoading(false);
@@ -212,7 +234,7 @@ export default function ScanPage() {
                          <h3 className="text-5xl font-outfit font-black text-white tracking-tighter">Triage Success</h3>
                          <div className="p-8 bg-slate-950 rounded-[2.5rem] border border-slate-800">
                             <p className="text-[10px] text-slate-500 font-black uppercase mb-3">AI Verdict</p>
-                            <p className={cn("text-4xl font-black font-outfit", ['Malignant', 'Pre-malignant'].includes(result.prediction) ? "text-rose-500" : "text-emerald-500")}>{result.prediction}</p>
+                             <p className={cn("text-4xl font-black font-outfit", getVerdictColor(result.prediction))}>{result.prediction}</p>
                          </div>
                       </div>
                       <div className="flex flex-col justify-end gap-4">

@@ -23,7 +23,8 @@ async def receive_case(
     
     # Simulate processing and store remote ID
     remote_uuid = str(uuid.uuid4())
-    remote_sync_id = f"CLD-{remote_uuid[:8].upper()}"
+    sync_id_prefix = remote_uuid[:8].upper()
+    remote_sync_id = f"CLD-{sync_id_prefix}"
     
     return {
         "status": "success",

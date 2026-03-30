@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Settings as SettingsIcon, Globe, Shield, Terminal, Zap, ShieldCheck } from 'lucide-react';
+import { Globe, Shield } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 

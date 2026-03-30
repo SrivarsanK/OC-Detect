@@ -1,17 +1,57 @@
 # Directory Structure
 
 ## Root
-- `.git/`: Vercel/Git source control
-- `.gitignore`: User-defined ignore patterns for agent metadata
-- `skills-lock.json`: Lock file for agent skills
+- `src/` — Python backend (FastAPI + services)
+- `dashboard/` — Next.js web dashboard
+- `tests/` — Python test scripts
+- `notebooks/` — Jupyter research notebooks
+- `assets/` — Static assets
+- `.oral_data/` — Runtime storage (images, reports); gitignored
+- `Dockerfile` + `docker-compose.yml` — Containerisation
+- `requirements.txt` — Python dependencies
+- `.planning/` — GSD project planning files
 
-## .agent/
-- `get-shit-done/`: GSD binaries, tools, templates, and core logic (from `npx get-shit-done-cc`)
-- `skills/`: Individual agent skills (find-skills, gsd-*, etc.)
+## src/
+```
+src/
+├── main.py               FastAPI app entry point, CORS, router mounts
+├── tui.py                Click CLI / Rich TUI for health workers
+├── core/
+│   ├── config.py         Pydantic BaseSettings (model ver, classes, thresholds)
+│   └── optimizer.py      TensorRT / quantization helpers
+├── api/
+│   ├── ingestion.py      POST /ingest/upload — full pipeline endpoint
+│   ├── cases.py          GET /cases — list/get cases
+│   └── mock_cloud.py     POST /mock-cloud/cases — simulated sync target
+├── services/
+│   ├── image_processor.py  CLAHE, blur detection, Grad-CAM overlay
+│   ├── inference_service.py MobileNetV2 + MC Dropout + Grad-CAM
+│   ├── storage_service.py   Save images to .oral_data/
+│   ├── reporting_service.py Generate PDF & JSON clinical reports
+│   └── sync_service.py      Async HTTP sync to cloud
+├── db/
+│   └── database.py       SQLAlchemy engine, Base, SessionLocal, get_db
+└── models/
+    └── cases.py          Case ORM model + CaseStatus enum
+```
 
-## .planning/ (to be created completely)
-- `codebase/`: Current codebase map (this document)
-- `PROJECT.md`, `ROADMAP.md`, `STATE.md`: Project-level planning and memory
+## dashboard/
+```
+dashboard/
+├── app/
+│   ├── layout.tsx        Root layout
+│   ├── page.tsx          Main dashboard page (case list, stats)
+│   ├── scan/             Scan upload page
+│   ├── analytics/        Analytics page
+│   ├── archive/          Archived cases page
+│   └── settings/         Settings page
+├── components/           Reusable React components
+├── lib/                  Shared utilities (API client, etc.)
+└── public/               Static files
+```
 
-## .vscode/
-- `settings.json`: Editor-specific environment settings
+## tests/
+```
+tests/
+└── simulate_screening.py  End-to-end simulation script
+```
