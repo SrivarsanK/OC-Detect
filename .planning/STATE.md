@@ -56,7 +56,8 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1 pending todo(s):
+- **Implement advanced feature engineering for oral cancer detection** (area: general)
 
 ### Blockers/Concerns
 
