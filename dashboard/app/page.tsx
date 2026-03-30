@@ -7,18 +7,15 @@ import {
   Activity, 
   Download, 
   FileText, 
-  Info, 
   Map, 
   RefreshCcw,
-  Microscope,
-  Stethoscope,
   Terminal,
-  Zap,
-  Globe,
-  ExternalLink,
   Eye,
   EyeOff,
-  ClipboardList
+  AlertTriangle,
+  CheckCircle2,
+  ShieldCheck,
+  Brain
 } from 'lucide-react';
 
 import { cn } from "@/lib/utils";
@@ -87,36 +84,43 @@ export default function Home() {
     }
   };
 
-  // Classes sourced from SrivarsanK/oral-cancer (Edge Impulse MobileNetV2)
-  const HIGH_RISK = ['oral malignant melanoma', 'squamous cell carcinoma'];
-  const MEDIUM_RISK = ['lichen planus'];
+  // Binary classification: CANCER / NON CANCER
+  const isCancer = (cls: string) => cls.toUpperCase() === 'CANCER';
 
-  const getTriageStyle = (triage: string) => {
-    if (HIGH_RISK.includes(triage.toLowerCase())) return 'text-rose-500';
-    if (MEDIUM_RISK.includes(triage.toLowerCase())) return 'text-amber-500';
-    return 'text-emerald-500';
-  };
+  const getTriageStyle = (triage: string) => 
+    isCancer(triage) ? 'text-rose-500' : 'text-emerald-500';
+
+  const getTriageBg = (triage: string) =>
+    isCancer(triage) 
+      ? 'bg-rose-500/5 border-rose-500/10' 
+      : 'bg-emerald-500/5 border-emerald-500/10';
+
+  const getBarColor = (triage: string) =>
+    isCancer(triage) ? 'bg-rose-500' : 'bg-emerald-500';
+
+  const cancerCount = cases.filter(c => isCancer(c.prediction_class)).length;
+  const normalCount = cases.filter(c => !isCancer(c.prediction_class)).length;
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
       
-      {/* 📋 Clinical Case Stream */}
+      {/* Case Stream */}
       <section className="flex-1 p-6 lg:p-12 overflow-y-auto overflow-x-hidden custom-scrollbar bg-[radial-gradient(ellipse_at_top_left,rgba(6,182,212,0.05)_0%,transparent_50%)]">
           <div className="mb-10 flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6">
             <div>
                 <h1 className="text-3xl lg:text-4xl font-outfit font-black tracking-tighter text-white">Case Triage</h1>
                 <div className="flex flex-wrap items-center gap-3 mt-4">
                   <Badge variant="secondary" className="bg-slate-900 border-slate-800">Total: {cases.length}</Badge>
-                  {cases.filter(c => HIGH_RISK.includes(c.prediction_class.toLowerCase())).length > 0 && (
-                    <Badge variant="destructive" className="font-black">⚠ Urgent: Malignancy Detected</Badge>
+                  {cancerCount > 0 && (
+                    <Badge variant="destructive" className="font-black">⚠ {cancerCount} Cancer Detected</Badge>
                   )}
-                  {cases.filter(c => MEDIUM_RISK.includes(c.prediction_class.toLowerCase())).length > 0 && (
-                    <Badge variant="secondary" className="font-black bg-amber-900/40 text-amber-400 border-amber-800">Watch: Lichen Planus</Badge>
+                  {normalCount > 0 && (
+                    <Badge variant="secondary" className="font-black bg-emerald-900/40 text-emerald-400 border-emerald-800">✓ {normalCount} Normal</Badge>
                   )}
                 </div>
             </div>
             <div className="lg:text-right">
-                <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest leading-none mb-2">Live Node Feed</p>
+                <p className="text-[10px] text-slate-600 font-black uppercase tracking-widest leading-none mb-2">EfficientNet-B4 Pipeline</p>
                 <Button variant="ghost" size="sm" onClick={fetchCases} className="text-xs font-bold text-slate-400 gap-2">
                    <RefreshCcw className={cn("size-3", loading ? "animate-spin" : "")} /> 
                    Refresh
@@ -151,12 +155,21 @@ export default function Home() {
                     <div className="flex items-center gap-4">
                       <div className={cn(
                         "size-12 rounded-xl flex items-center justify-center border transition-all duration-300",
-                        selectedCase?.id === c.id ? "bg-cyan-500 border-cyan-400 shadow-lg shadow-cyan-500/30" : "bg-slate-950 border-slate-800"
+                        isCancer(c.prediction_class) 
+                          ? "bg-rose-500/10 border-rose-500/30" 
+                          : selectedCase?.id === c.id 
+                            ? "bg-cyan-500 border-cyan-400 shadow-lg shadow-cyan-500/30" 
+                            : "bg-slate-950 border-slate-800"
                       )}>
-                          <FileText className={cn("size-6", selectedCase?.id === c.id ? "text-white" : "text-slate-600")} />
+                          {isCancer(c.prediction_class) 
+                            ? <AlertTriangle className="size-6 text-rose-500" />
+                            : <FileText className={cn("size-6", selectedCase?.id === c.id ? "text-white" : "text-slate-600")} />
+                          }
                       </div>
                       <div>
-                          <CardDescription className="text-[10px] uppercase tracking-widest font-black opacity-50">NODE_{c.timestamp.split('T')[1].substring(0,5)}</CardDescription>
+                          <CardDescription className="text-[10px] uppercase tracking-widest font-black opacity-50">
+                            {c.timestamp ? `NODE_${c.timestamp.split('T')[1]?.substring(0,5) || '00:00'}` : 'SCAN'}
+                          </CardDescription>
                           <CardTitle className="text-lg">Case {c.id.substring(0, 8)}</CardTitle>
                       </div>
                     </div>
@@ -164,13 +177,8 @@ export default function Home() {
                   </CardHeader>
 
                   <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center px-8 pb-8">
-                      <div className={cn(
-                        "p-5 rounded-3xl border",
-                        HIGH_RISK.includes(c.prediction_class.toLowerCase()) ? "bg-rose-500/5 border-rose-500/10" :
-                        MEDIUM_RISK.includes(c.prediction_class.toLowerCase()) ? "bg-amber-500/5 border-amber-500/10" :
-                        "bg-emerald-500/5 border-emerald-500/10"
-                      )}>
-                        <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Verdict</p>
+                      <div className={cn("p-5 rounded-3xl border", getTriageBg(c.prediction_class))}>
+                        <p className="text-[10px] text-slate-500 font-black uppercase mb-1">AI Verdict</p>
                         <p className={cn("text-2xl font-outfit font-black tracking-tight", getTriageStyle(c.prediction_class))}>{c.prediction_class}</p>
                       </div>
                       <div className="space-y-3">
@@ -182,10 +190,7 @@ export default function Home() {
                             <motion.div 
                             initial={{ width: 0 }}
                             animate={{ width: `${c.confidence * 100}%` }}
-                            className={cn("h-full rounded-full",
-                              HIGH_RISK.includes(c.prediction_class.toLowerCase()) ? 'bg-rose-500' :
-                              MEDIUM_RISK.includes(c.prediction_class.toLowerCase()) ? 'bg-amber-500' : 'bg-emerald-500'
-                            )}
+                            className={cn("h-full rounded-full", getBarColor(c.prediction_class))}
                             />
                         </div>
                       </div>
@@ -197,7 +202,7 @@ export default function Home() {
           </div>
       </section>
 
-      {/* 📊 Evidence Panel */}
+      {/* Evidence Panel */}
       <AnimatePresence>
       {selectedCase && (
         <motion.section 
@@ -210,11 +215,11 @@ export default function Home() {
           <div className="p-8 lg:p-12 space-y-10 relative">
             <div className="flex items-center justify-between">
                 <div className="font-outfit">
-                  <Badge variant="cyan" className="mb-3 px-4 font-black">Clinical Deep-Dive</Badge>
-                  <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-white leading-none">Evidence</h2>
+                  <Badge variant="cyan" className="mb-3 px-4 font-black">Clinical Evidence</Badge>
+                  <h2 className="text-4xl lg:text-5xl font-black tracking-tighter text-white leading-none">Analysis</h2>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="icon" className="h-12 w-12 bg-slate-900 border border-slate-800 text-cyan-400 rounded-2xl">
+                  <Button size="icon" className="h-12 w-12 bg-slate-900 border border-slate-800 text-cyan-400 rounded-2xl" onClick={() => window.open(`${API_BASE}/cases/${selectedCase.id}/report/pdf`, '_blank')}>
                     <Download className="size-6" />
                   </Button>
                   <Button size="icon" variant="ghost" className="h-12 w-12 text-slate-500 rounded-2xl" onClick={() => setSelectedCase(null)}>
@@ -226,15 +231,17 @@ export default function Home() {
             {/* Metrics */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-slate-900/40 rounded-[2rem] border-slate-900 p-6 space-y-2">
-                  <p className="uppercase tracking-widest font-black text-[9px] text-slate-500">XAI Variance</p>
+                  <p className="uppercase tracking-widest font-black text-[9px] text-slate-500">Uncertainty</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-outfit font-black text-white">{(selectedCase.uncertainty).toFixed(3)}</span>
+                    <span className="text-4xl font-outfit font-black text-white">{selectedCase.uncertainty.toFixed(3)}</span>
                   </div>
               </div>
               <div className="bg-slate-900/40 rounded-[2rem] border-slate-900 p-6 space-y-2">
-                  <p className="uppercase tracking-widest font-black text-[9px] text-slate-500">Engine Score</p>
+                  <p className="uppercase tracking-widest font-black text-[9px] text-slate-500">Confidence</p>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-4xl font-outfit font-black text-emerald-500">A+</span>
+                    <span className={cn("text-4xl font-outfit font-black", getTriageStyle(selectedCase.prediction_class))}>
+                      {(selectedCase.confidence * 100).toFixed(0)}%
+                    </span>
                   </div>
               </div>
             </div>
@@ -273,13 +280,11 @@ export default function Home() {
                   )}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950 p-8 pt-20">
                       <div className="flex items-start gap-4">
-                        <div className="w-1 h-12 bg-cyan-600 rounded-full shrink-0" />
+                        <div className={cn("w-1 h-12 rounded-full shrink-0", isCancer(selectedCase.prediction_class) ? "bg-rose-600" : "bg-cyan-600")} />
                         <p className="text-xs font-bold text-slate-300 leading-relaxed">
-                            {HIGH_RISK.includes(selectedCase.prediction_class.toLowerCase())
-                              ? "High-risk malignancy signature detected. Immediate specialist review required."
-                              : MEDIUM_RISK.includes(selectedCase.prediction_class.toLowerCase())
-                              ? "Pre-malignant condition (Lichen Planus) detected. Close monitoring recommended."
-                              : "No significant malignant patterns detected in primary specimen."}
+                            {isCancer(selectedCase.prediction_class)
+                              ? "Cancer signature detected. AI flagged potential malignant patterns. Immediate specialist referral and biopsy recommended."
+                              : "No significant malignant patterns detected. Routine monitoring recommended."}
                         </p>
                       </div>
                   </div>
@@ -291,7 +296,14 @@ export default function Home() {
                 className="w-full h-16 bg-cyan-600 hover:bg-cyan-500 text-white font-outfit font-black text-lg rounded-[2.5rem] shadow-xl shadow-cyan-900/10"
                 onClick={() => window.open(`${API_BASE}/cases/${selectedCase.id}/report/pdf`, '_blank')}
               >
-                Launch Result Hub
+                View Clinical Report
+              </Button>
+              <Button 
+                className="w-full h-14 bg-slate-800 hover:bg-slate-700 text-white font-outfit font-black rounded-[2.5rem] border border-slate-700"
+                onClick={() => handleSync(selectedCase.id)}
+                disabled={syncing === selectedCase.id}
+              >
+                {syncing === selectedCase.id ? 'Syncing...' : 'Sync to Cloud'}
               </Button>
             </div>
           </div>

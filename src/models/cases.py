@@ -29,10 +29,13 @@ class Case(Base):
     blur_score = Column(Float, nullable=True)
     status = Column(Enum(CaseStatus), default=CaseStatus.PENDING)
     
-    # v1 specific triage results
-    prediction_class = Column(String, nullable=True) # {Normal, Benign, ...}
+    # v2 results (EfficientNet-B4 + MC Dropout + Features)
+    prediction_class = Column(String, nullable=True) 
     confidence = Column(Float, nullable=True)
     uncertainty = Column(Float, nullable=True)
+    entropy = Column(Float, nullable=True)
+    features_json = Column(String, nullable=True)
+    
     report_pdf_path = Column(String, nullable=True)
     report_json_path = Column(String, nullable=True)
 

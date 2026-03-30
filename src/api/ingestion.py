@@ -5,6 +5,7 @@ import uuid
 import cv2
 import numpy as np
 import io
+import json
 from src.services.image_processor import ImageProcessor
 from src.services.inference_service import inference_service
 from src.services.feature_extractor import feature_extractor
@@ -129,6 +130,8 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         prediction_class=inference_result["prediction"],
         confidence=inference_result["confidence"],
         uncertainty=inference_result["uncertainty"],
+        entropy=inference_result.get("entropy", 0.0),
+        features_json=json.dumps(features_summary) if features_summary else None,
         status=CaseStatus.PROCESSED,
     )
     db.add(new_case)

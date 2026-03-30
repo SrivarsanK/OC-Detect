@@ -1,4 +1,5 @@
 import os
+import json
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 from src.core.config import settings
@@ -42,6 +43,13 @@ class SyncService:
                     "confidence": str(case.confidence),
                     "uncertainty": str(case.uncertainty)
                 }
+                
+                # Add features from JSON report if possible
+                report_path = storage_service.get_full_path(case.report_json_path)
+                if os.path.exists(report_path):
+                    with open(report_path, 'r') as f:
+                        report_data = json.load(f)
+                        data["features"] = json.dumps(report_data.get("quantitative_features", {}))
                 
                 response = await client.post(self.cloud_api_url, data=data, files=files)
                 response.raise_for_status()
