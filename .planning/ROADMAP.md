@@ -84,6 +84,16 @@ OralGuard is being built as a standard, modular AI screening solution. We start 
 
 
 
+### Phase 6: Advanced Feature Engineering for Oral Cancer Detection
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 5
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 6 to break down)
+
 ---
 *Roadmap defined: 2026-03-23*
 *Last updated: 2026-03-23 after initial definition*

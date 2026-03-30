@@ -59,6 +59,10 @@ Recent decisions affecting current work:
 1 pending todo(s):
 - **Implement advanced feature engineering for oral cancer detection** (area: general)
 
+### Roadmap Evolution
+
+- Phase 6 added: Advanced Feature Engineering for Oral Cancer Detection
+
 ### Blockers/Concerns
 
 None yet.
