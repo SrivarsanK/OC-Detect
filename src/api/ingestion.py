@@ -7,10 +7,12 @@ import numpy as np
 import io
 from src.services.image_processor import ImageProcessor
 from src.services.inference_service import inference_service
+from src.services.feature_extractor import feature_extractor
 from src.services.storage_service import storage_service
 from src.services.reporting_service import reporting_service
 from src.db.database import get_db
 from src.models.cases import Case, CaseStatus
+from src.core.config import settings
 
 router = APIRouter()
 processor = ImageProcessor()
@@ -24,9 +26,11 @@ class IngestResponse(BaseModel):
     prediction: str
     confidence: float
     uncertainty: float
+    entropy: float = 0.0
     referral: bool
     heatmap_path: str | None = None
     report_pdf_path: str | None = None
+    features_summary: dict | None = None
     message: str
 
 
@@ -34,11 +38,11 @@ class IngestResponse(BaseModel):
 async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_db)):
     # 1. Read binary
     contents = await file.read()
-    
+
     # 2. Convert to CV2 image
     nparr = np.frombuffer(contents, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    
+
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image file or format")
 
@@ -52,49 +56,67 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
             blur_score=round(blur_score, 2),
             prediction="N/A",
             confidence=0.0,
+            uncertainty=0.0,
             referral=False,
-            message=f"Image too blurry (score: {blur_score:.2f} < threshold)"
+            message=f"Image too blurry (score: {blur_score:.2f} < threshold)",
         )
 
-    # 4. Enhance
-    enhanced = processor.apply_clahe(img)
-    
-    # 5. AI Inference (Phase 2 integration)
+    # 4. ROI extraction + CLAHE enhancement
+    roi = processor.extract_roi(img)
+    enhanced = processor.apply_clahe(roi)
+
+    # 5. Feature Engineering (handcrafted features)
+    features = None
+    features_summary = None
+    if settings.FEATURE_EXTRACTION_ENABLED:
+        features = feature_extractor.extract_all(enhanced)
+        features_summary = {
+            "red_ratio": round(features["color"].get("red_ratio", 0), 4),
+            "white_patch_ratio": round(features["color"].get("white_patch_ratio", 0), 4),
+            "red_patch_ratio": round(features["color"].get("red_patch_ratio", 0), 4),
+            "glcm_contrast": round(features["texture"].get("glcm_contrast", 0), 4),
+            "glcm_homogeneity": round(features["texture"].get("glcm_homogeneity", 0), 4),
+            "edge_density": round(features["shape"].get("edge_density", 0), 4),
+            "lbp_entropy": round(features["texture"].get("lbp_entropy", 0), 4),
+            "feature_vector_length": len(features.get("feature_vector", [])),
+        }
+
+    # 6. AI Inference (EfficientNet-B4 with MC Dropout)
     inference_result = inference_service.predict(enhanced)
-    
-    # 6. Grad-CAM Heatmap (Phase 3 integration)
+
+    # 7. Grad-CAM Heatmap
     heatmap_path = None
-    if inference_result["prediction"] != "Normal":
-        # Note: In a real PyTorch scenario, the output tensor would be passed here
-        heatmap_raw = inference_service.generate_heatmap(None, 0) 
+    if inference_result["prediction"] != "NON CANCER":
+        heatmap_raw = inference_service.generate_heatmap(None, 1)  # class 1 = CANCER
         heatmap_overlay = processor.overlay_heatmap(enhanced, heatmap_raw)
         heatmap_path = storage_service.save_image(heatmap_overlay, category="heatmaps")
 
-    # 7. Local Persistent Storage
+    # 8. Local Persistent Storage
     raw_rel_path = storage_service.save_image(img, category="raw")
     enhanced_rel_path = storage_service.save_image(enhanced, category="enhanced")
-    
-    # 8. Clinical Reports (Phase 4 integration)
+
+    # 9. Clinical Reports
+    real_case_id = str(uuid.uuid4())
     case_data_for_report = {
-        "id": str(uuid.uuid4()), # Temporary ID to ensure consistency
+        "id": real_case_id,
         "prediction_class": inference_result["prediction"],
         "confidence": inference_result["confidence"],
         "uncertainty": inference_result["uncertainty"],
-        "referral": inference_result["referral"]
+        "entropy": inference_result.get("entropy", 0.0),
+        "referral": inference_result["referral"],
+        "features": features_summary,
     }
-    
-    # Use real Case ID
-    real_case_id = str(uuid.uuid4())
-    case_data_for_report["id"] = real_case_id
-    
+
     report_json_path = reporting_service.generate_json(case_data_for_report)
     report_pdf_path = reporting_service.generate_pdf(
-        case_data_for_report, 
-        {"enhanced": storage_service.get_full_path(enhanced_rel_path), 
-         "heatmap": storage_service.get_full_path(heatmap_path) if heatmap_path else None}
+        case_data_for_report,
+        {
+            "enhanced": storage_service.get_full_path(enhanced_rel_path),
+            "heatmap": storage_service.get_full_path(heatmap_path) if heatmap_path else None,
+        },
     )
 
-    # 9. Database Persistence
+    # 10. Database Persistence
     new_case = Case(
         id=real_case_id,
         patient_id=None,
@@ -107,12 +129,12 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         prediction_class=inference_result["prediction"],
         confidence=inference_result["confidence"],
         uncertainty=inference_result["uncertainty"],
-        status=CaseStatus.PROCESSED
+        status=CaseStatus.PROCESSED,
     )
     db.add(new_case)
     db.commit()
     db.refresh(new_case)
-    
+
     return IngestResponse(
         id=new_case.id,
         filename=file.filename,
@@ -121,13 +143,10 @@ async def upload_image(file: UploadFile = File(...), db: Session = Depends(get_d
         prediction=new_case.prediction_class,
         confidence=new_case.confidence,
         uncertainty=new_case.uncertainty,
+        entropy=inference_result.get("entropy", 0.0),
         referral=inference_result["referral"],
         heatmap_path=heatmap_path,
         report_pdf_path=report_pdf_path,
-        message="OralGuard triage, XAI evidence, and Clinical Report generation complete."
+        features_summary=features_summary,
+        message="OralGuard triage complete — AI inference, feature analysis, XAI heatmap, and clinical report generated.",
     )
-
-
-
-
-
