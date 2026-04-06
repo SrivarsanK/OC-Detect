@@ -2,10 +2,23 @@
 .agent/
 _agent/
 .agents/
-/skills/
-skills-lock.json
+.claude/
 .gemini/
 .kiro/
+.planning/
+.windsurf/
+skills-lock.json
+/skills/
+
+# [Project State & Metadata]
+gsd_init.json
+init_map.json
+init_progress.json
+init_res.json
+roadmap_analysis.json
+state_sn.json
+p_bar.txt
+gpu.txt
 
 # [Python Environment]
 __pycache__/
@@ -48,8 +61,6 @@ checkpoint/
 node_modules/
 .next/
 out/
-build/
-dist/
 .cache/
 .npm
 .yarn-integrity
@@ -71,13 +82,19 @@ models/*.pth
 models/*.pt
 models/*.onnx
 tmp/
+artifacts/
+
+# [Media Files]
 *.jpg
 *.jpeg
 *.png
 *.bmp
+*.gif
+*.mp4
+*.webm
 
 # [IDE / OS]
-.vscode/*
+.vscode/
 !.vscode/settings.json
 !.vscode/extensions.json
 !.vscode/launch.json

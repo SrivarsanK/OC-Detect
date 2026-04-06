@@ -167,7 +167,7 @@ export default function TriagePage() {
           initial={{ x: '100%' }} 
           animate={{ x: 0 }} 
           exit={{ x: '100%' }} 
-          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }} 
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] as [number, number, number, number] }} 
           className="fixed inset-0 lg:relative lg:inset-auto w-full lg:w-[450px] xl:w-[500px] border-l border-slate-900 bg-slate-950/95 lg:bg-slate-950/90 backdrop-blur-3xl overflow-y-auto z-[110] lg:z-40 shadow-2xl custom-scrollbar"
         >
           <div className="p-6 sm:p-8 lg:p-10 space-y-8 sm:space-y-10 relative">

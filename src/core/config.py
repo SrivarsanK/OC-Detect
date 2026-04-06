@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # ── Model Configuration ──────────────────────────────────────
     MODEL_VERSION: str = "v2.0.0-efficientnet-b4-kaggle"
-    MODEL_PATH: str = os.path.join("models", "oralguard_efficientnet_b4.pth")
+    MODEL_PATH: str = os.path.join("models", "best_oral_cancer_model.pth")
     IMAGE_SIZE: int = 380  # EfficientNet-B4 optimal input size
 
     CLASSES: list[str] = [
